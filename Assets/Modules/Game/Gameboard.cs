@@ -5,35 +5,34 @@ using UnityEngine;
 
 public class Gameboard : MonoBehaviour
 {
-    public GameData gameData;
-    public GameObject cardPrefab;
+    public static List<Card> flippedCards;
 
+    [SerializeField] private GameData gameData;
+    [SerializeField] private GameObject cardPrefab;
     [SerializeField] private RectTransform cardsParent;
 
     private int rows;
     private int columns;
-
-    private float spacing = 25.0f;
+    private float spacing = 50.0f;
     
     private Card[,] cards;
-
     private List<int> imageIndexesToFetch;
-    
-    private void Start()
+
+    public void StartGame(int rows, int columns)
     {
-        //TODO
-        //Make this a proper function 
-        rows = 3;
-        columns = 4;
-        
-        InitializeGameboard();
+        flippedCards = new List<Card>();
+        this.rows = rows;
+        this.columns = columns;
+
+        Init();
+        StartCoroutine(CreateCards());
     }
 
     /// <summary>
     /// Choose the image indexes that are to be used for this game session. 
     /// Indexes can range from 0 to 25 as there are 26 unique pictures in the game.
     /// </summary>
-    public void InitializeGameboard()
+    private void Init()
     {
         imageIndexesToFetch = new List<int>();
         cards = new Card[rows, columns];
@@ -42,14 +41,27 @@ public class Gameboard : MonoBehaviour
 
         for (int i = 0; i < totalCards / 2; i++)
         {
-            int randomIndex = Random.Range(0, 26);
+            //int randomIndex = Random.Range(0, 26);
+            int randomIndex = GetUniqueRandomIndex();
             //Add the index twice since two of the cards will have the same image
             imageIndexesToFetch.Add(randomIndex);
             imageIndexesToFetch.Add(randomIndex);
         }
 
         UtilityFunctions.Shuffle(imageIndexesToFetch);
-        StartCoroutine(CreateCards());
+    }
+
+    private int GetUniqueRandomIndex()
+    {
+        int randomIndex = Random.Range(0, 26);
+        if (imageIndexesToFetch.Contains(randomIndex))
+        {
+            return GetUniqueRandomIndex();
+        }
+        else
+        {
+            return randomIndex;
+        }
     }
 
     /// <summary>
@@ -90,6 +102,45 @@ public class Gameboard : MonoBehaviour
                 cardsMade++;
                 yield return new WaitForSeconds(0.2f);
             }
+        }
+
+        foreach (var card in cards)
+        {
+            card.FlipUp();
+        }
+
+        yield return new WaitForSeconds(3.0f);
+
+        foreach (var card in cards)
+        {
+            card.FlipDown();
+        }
+    }
+
+    public static void OnCardFlipped(Card card)
+    {
+        if (flippedCards.Count > 0) 
+        {
+            Card sameCard = flippedCards.Find(o => o.Equals(card));
+            if (sameCard != null) 
+            {
+                sameCard.ScheduleDestruction();
+                card.ScheduleDestruction();
+                flippedCards.Remove(sameCard);
+            }
+            else
+            {
+                card.FlipDown();
+                foreach (var flippedCard in flippedCards)
+                {
+                    flippedCard.FlipDown();
+                }
+                flippedCards.Clear();
+            }
+        }
+        else
+        {
+            flippedCards.Add(card);
         }
     }
 }
