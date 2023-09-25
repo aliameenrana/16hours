@@ -148,10 +148,15 @@ public class Gameboard : MonoBehaviour
                 sameCard.ScheduleDestruction();
                 card.ScheduleDestruction();
                 flippedCards.Remove(sameCard);
+                AudioManager.instance.Flip();
+                AudioManager.instance.Match();
                 scoreSystem.RecordScore(1);
             }
             else
             {
+                AudioManager.instance.Flip();
+                AudioManager.instance.Mismatch();
+
                 card.FlipDown();
                 foreach (var flippedCard in flippedCards)
                 {
@@ -164,6 +169,7 @@ public class Gameboard : MonoBehaviour
         else
         {
             flippedCards.Add(card);
+            AudioManager.instance.Flip();
         }
     }
 

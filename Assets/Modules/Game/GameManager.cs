@@ -21,6 +21,7 @@ public class GameManager : MonoBehaviour
     public void GameOver()
     {
         UIManager.instance.GameOver();
+        AudioManager.instance.LevelComplete();
     }
 
     public void SaveGame()
