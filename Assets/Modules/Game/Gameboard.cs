@@ -26,11 +26,12 @@ public class Gameboard : MonoBehaviour
     {
         instance = this;
         scoreSystem = GetComponent<ScoreSystem>();
+        flippedCards = new List<Card>();
     }
 
     public void StartGame(int rows, int columns)
     {
-        flippedCards = new List<Card>();
+        flippedCards.Clear();
         this.rows = rows;
         this.columns = columns;
 
@@ -51,7 +52,6 @@ public class Gameboard : MonoBehaviour
 
         for (int i = 0; i < totalCards / 2; i++)
         {
-            //int randomIndex = Random.Range(0, 26);
             int randomIndex = GetUniqueRandomIndex();
             //Add the index twice since two of the cards will have the same image
             imageIndexesToFetch.Add(randomIndex);
@@ -62,6 +62,10 @@ public class Gameboard : MonoBehaviour
         scoreSystem.Init();
     }
 
+    /// <summary>
+    /// Returns a unique random number from 0 to 26
+    /// </summary>
+    /// <returns></returns>
     private int GetUniqueRandomIndex()
     {
         int randomIndex = Random.Range(0, 26);
@@ -84,7 +88,7 @@ public class Gameboard : MonoBehaviour
     {
         GameObject cardObject;
         int cardsMade = 0;
-
+        cardsOnBoard = 0;
         // Get the size of the parent
         float parentWidth = cardsParent.rect.width; 
         float parentHeight = cardsParent.rect.height; 
@@ -174,6 +178,138 @@ public class Gameboard : MonoBehaviour
         if (cardsOnBoard == 0) 
         {
             GameManager.instance.GameOver();
+        }
+    }
+
+    public void SaveBoard()
+    {
+        string boardString = "";
+        for(int i = 0; i < rows; i++) 
+        {
+            for (int j = 0; j < columns; j++)
+            {
+                boardString += GetString(cards[i, j]);
+                if (j < columns - 1)
+                {
+                    boardString += ",";
+                }
+            }
+
+            if (i < rows - 1)
+            {
+                boardString += "\n";
+            }
+        }
+        PlayerPrefs.SetString(PlayerPrefsKeys.Board, boardString);
+        UIManager.instance.ShowToast("Game successfully saved");
+    }
+
+    public void LoadBoard()
+    {
+        string boardString = PlayerPrefs.GetString(PlayerPrefsKeys.Board, "");
+        
+        if (boardString == "") 
+        {
+            Debug.LogError("Error: No saved game found");
+            UIManager.instance.ShowToast("Error: No saved game found");
+        }
+        else
+        {
+            int[,] cardIndexes = StringToArray(boardString);
+            rows = cardIndexes.GetLength(0);
+            columns = cardIndexes.GetLength(1);
+
+            if (cards != null) 
+            {
+                foreach (var item in cards)
+                {
+                    Destroy(item.gameObject);
+                }
+            }
+
+            StartCoroutine(CreateLoadedCards(cardIndexes));
+        }
+    }
+
+    IEnumerator CreateLoadedCards(int[,] cardIndexes)
+    {
+        GameObject cardObject;
+
+        cardsOnBoard = 0;
+
+        if (cards == null)
+        {
+            cards = new Card[rows, columns];
+        }
+        
+        // Get the size of the parent
+        float parentWidth = cardsParent.rect.width;
+        float parentHeight = cardsParent.rect.height;
+
+        // Calculate the size of each cell
+        float cellWidth = (parentWidth - (spacing * (columns - 1))) / columns;
+        float cellHeight = (parentHeight - (spacing * (rows - 1))) / rows;
+
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < columns; j++)
+            {
+                CardProperties cardProperties = new CardProperties();
+                int index = cardIndexes[i, j];
+                
+                if (index < 0)
+                    continue;
+
+                cardProperties.sprite = gameData.pictures[cardIndexes[i, j]];
+                cardProperties.id = cardIndexes[i, j];
+                cardObject = Instantiate(cardPrefab, cardsParent);
+
+                RectTransform rectTransform = cardObject.GetComponent<RectTransform>();
+                rectTransform.sizeDelta = new Vector2(cellWidth, cellHeight);
+                rectTransform.anchoredPosition = new Vector2(j * (cellWidth + spacing), -i * (cellHeight + spacing));
+
+                Card card = cardObject.GetComponent<Card>();
+                card.SetProperties(cardProperties);
+                cards[i, j] = card;
+
+                cardsOnBoard++;
+                yield return new WaitForSeconds(0.2f);
+            }
+        }
+
+        UIManager.instance.ShowToast("Game successfully loaded");
+    }
+
+    // Parse a string back into a 2D integer array
+    private int[,] StringToArray(string arrayString)
+    {
+        string[] rows = arrayString.Split('\n');
+        int rowsCount = rows.Length;
+        int colsCount = rows[0].Split(',').Length;
+
+        int[,] newArray = new int[rowsCount, colsCount];
+
+        for (int i = 0; i < rowsCount; i++)
+        {
+            string[] elements = rows[i].Split(',');
+            for (int j = 0; j < colsCount; j++)
+            {
+                newArray[i, j] = int.Parse(elements[j]);
+            }
+        }
+
+        return newArray;
+    }
+
+    private string GetString(Card card)
+    {
+        if (card == null) 
+        {
+            return "-1";
+        }
+        else
+        {
+            return card.GetID().ToString();
         }
     }
 }

@@ -7,7 +7,6 @@ using UnityEngine.Accessibility;
 public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
-    public Gameboard gameBoard;
 
     private void Awake()
     {
@@ -16,11 +15,23 @@ public class GameManager : MonoBehaviour
 
     public void StartGame()
     {
-        gameBoard.StartGame(3, 4);
+        Gameboard.instance.StartGame(3, 4);
     }
 
     public void GameOver()
     {
         UIManager.instance.GameOver();
+    }
+
+    public void SaveGame()
+    {
+        Gameboard.instance.SaveBoard();
+        ScoreSystem.instance.SaveScore();
+    }
+
+    public void LoadGame() 
+    {
+        Gameboard.instance.LoadBoard();
+        ScoreSystem.instance.LoadScore();
     }
 }

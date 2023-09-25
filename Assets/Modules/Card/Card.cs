@@ -12,7 +12,6 @@ public class Card : MonoBehaviour
 
     private CardProperties cardProperties;
 
-
     private bool isFlipped = false;
 
     public void SetProperties(CardProperties cardProperties) 
@@ -49,6 +48,11 @@ public class Card : MonoBehaviour
             isFlipped = true;
             Gameboard.instance.OnCardFlipped(this);
         }
+    }
+
+    public int GetID()
+    {
+        return cardProperties.id;
     }
 
     public bool Equals(Card x)
