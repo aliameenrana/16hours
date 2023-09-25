@@ -6,6 +6,7 @@ using UnityEngine;
 public class Gameboard : MonoBehaviour
 {
     public static List<Card> flippedCards;
+    public static Gameboard instance;
 
     [SerializeField] private GameData gameData;
     [SerializeField] private GameObject cardPrefab;
@@ -14,9 +15,18 @@ public class Gameboard : MonoBehaviour
     private int rows;
     private int columns;
     private float spacing = 50.0f;
+    private int cardsOnBoard = 0;
     
     private Card[,] cards;
     private List<int> imageIndexesToFetch;
+
+    private ScoreSystem scoreSystem;
+
+    private void Awake()
+    {
+        instance = this;
+        scoreSystem = GetComponent<ScoreSystem>();
+    }
 
     public void StartGame(int rows, int columns)
     {
@@ -49,6 +59,7 @@ public class Gameboard : MonoBehaviour
         }
 
         UtilityFunctions.Shuffle(imageIndexesToFetch);
+        scoreSystem.Init();
     }
 
     private int GetUniqueRandomIndex()
@@ -100,6 +111,7 @@ public class Gameboard : MonoBehaviour
                 cards[i,j] = card;
 
                 cardsMade++;
+                cardsOnBoard++;
                 yield return new WaitForSeconds(0.2f);
             }
         }
@@ -117,7 +129,12 @@ public class Gameboard : MonoBehaviour
         }
     }
 
-    public static void OnCardFlipped(Card card)
+    /// <summary>
+    /// If we have some cards flipped, check if the card we just flipped is one of them. If yes, destroy both and add to score. 
+    /// If not, Un-flip all cards back to their natural state
+    /// </summary>
+    /// <param name="card"></param>
+    public void OnCardFlipped(Card card)
     {
         if (flippedCards.Count > 0) 
         {
@@ -127,6 +144,7 @@ public class Gameboard : MonoBehaviour
                 sameCard.ScheduleDestruction();
                 card.ScheduleDestruction();
                 flippedCards.Remove(sameCard);
+                scoreSystem.RecordScore(1);
             }
             else
             {
@@ -136,11 +154,26 @@ public class Gameboard : MonoBehaviour
                     flippedCard.FlipDown();
                 }
                 flippedCards.Clear();
+                scoreSystem.RecordScore(0);
             }
         }
         else
         {
             flippedCards.Add(card);
+        }
+    }
+
+    public void UnRegisterCard()
+    {
+        cardsOnBoard -= 1;
+        CheckEnd();
+    }
+
+    private void CheckEnd()
+    {
+        if (cardsOnBoard == 0) 
+        {
+            GameManager.instance.GameOver();
         }
     }
 }

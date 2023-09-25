@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -36,14 +37,17 @@ public class Card : MonoBehaviour
         cardBackImage.enabled = true;
         isFlipped = false;
     }
-
+    
+    /// <summary>
+    /// Makes sure an already flipped card isn't flipped again
+    /// </summary>
     public void OnClickCard()
     {
         if (!isFlipped) 
         {
             FlipUp();
             isFlipped = true;
-            Gameboard.OnCardFlipped(this);
+            Gameboard.instance.OnCardFlipped(this);
         }
     }
 
@@ -57,10 +61,17 @@ public class Card : MonoBehaviour
         StartCoroutine(Destroy());
     }
 
+    /// <summary>
+    /// Blinking animation before destroying the card
+    /// </summary>
+    /// <returns></returns>
     IEnumerator Destroy()
     {
         float timer = 2.0f;
         bool status = cardImage.enabled;
+
+        //Show the matching image for 0.25 seconds before disappearing
+        yield return new WaitForSeconds(0.25f);
 
         while(timer > 0.0f) 
         {
@@ -69,6 +80,7 @@ public class Card : MonoBehaviour
             timer -= 0.25f;
             yield return new WaitForSeconds(0.25f);
         }
+        Gameboard.instance.UnRegisterCard();
         Destroy(gameObject);
     }
 }
